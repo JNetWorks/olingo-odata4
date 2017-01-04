@@ -22,6 +22,7 @@ import org.apache.olingo.server.api.serializer.SerializerException;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceNavigation;
 import org.apache.olingo.server.api.uri.UriResourceProperty;
+import org.apache.olingo.server.api.uri.UriResourceRef;
 import org.apache.olingo.server.api.uri.queryoption.ExpandItem;
 import org.apache.olingo.server.api.uri.queryoption.ExpandOption;
 import org.apache.olingo.server.api.uri.queryoption.SelectItem;
@@ -83,8 +84,11 @@ public abstract class ExpandSelectHelper {
   public static Set<List<String>> getExpandedPaths(final List<ExpandItem> selectItems) {
     Set<List<String>> expandedPaths = new HashSet<List<String>>();
     for (final ExpandItem item : selectItems) {
-      final List<UriResource> parts = item.getResourcePath().getUriResourceParts();
+      List<UriResource> parts = item.getResourcePath().getUriResourceParts();
       List<String> path = new ArrayList<String>();
+      if (parts.size() > 0 && !(parts.get(parts.size() - 1) instanceof UriResourceNavigation)) {
+        parts = parts.subList(0, parts.size() - 1);
+      }
       if (parts.get(parts.size() - 1) instanceof UriResourceNavigation) {
         for (int i = 0; i < parts.size() - 1; i++) {
           UriResource part = parts.get(i);
@@ -131,21 +135,6 @@ public abstract class ExpandSelectHelper {
     return false;
   }
 
-//  public static Set<List<String>> getReducedPaths(final Set<List<String>> selectedPaths,
-//                                                  final String propertyName) {
-//    Set<List<String>> reducedPaths = new HashSet<List<String>>();
-//    for (final List<String> path : selectedPaths) {
-//      if (propertyName.equals(path.get(0))) {
-//        if (path.size() > 1) {
-//          reducedPaths.add(path.subList(1, path.size()));
-//        } else {
-//          return null;
-//        }
-//      }
-//    }
-//    return reducedPaths.isEmpty() ? null : reducedPaths;
-//  }
-//
   public static Set<List<String>> getReducedPaths(final Set<List<String>> selectedPaths,
                                                   final String propertyName) {
     if (selectedPaths == null) {
@@ -203,6 +192,9 @@ public abstract class ExpandSelectHelper {
 
   public static ExpandItem getExpandItem(final List<ExpandItem> expandItems, final String propertyName) {
     for (final ExpandItem item : expandItems) {
+      if (item.isStar()) {
+        continue;
+      }
       final List<UriResource> resourceParts = item.getResourcePath().getUriResourceParts();
       final UriResource resource = resourceParts.get(0);
       if (resource instanceof UriResourceNavigation
@@ -214,14 +206,14 @@ public abstract class ExpandSelectHelper {
   }
 
   public static boolean resourceEqualsPath(List<UriResource> resourceParts, LinkedList<String> path) {
-    if (resourceParts.size() != path.size()) {
+    if (resourceParts.size() - path.size() > 1) {
       return false;
     }
 
-    Iterator<UriResource> selectIter = resourceParts.iterator();
     Iterator<String> pathIter = path.iterator();
+    Iterator<UriResource> selectIter = resourceParts.iterator();
 
-    while (selectIter.hasNext()) {
+    while (pathIter.hasNext()) {
       if (!selectIter.next().getSegmentValue().equals(pathIter.next())) {
         return false;
       }

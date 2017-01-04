@@ -826,8 +826,6 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
           }
           writeProperties(metadata, type, ((ComplexValue) value), path, select, selectedPaths, expand,
                   expandedPaths, null, null, json);
-//        writeComplexValue(metadata, type, ((ComplexValue) value).
-// getValue(), selectedPaths, expand, expandedPaths, json);
           json.writeEndObject();
           break;
         default:
@@ -1070,18 +1068,12 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
         json.writeStringField(Constants.JSON_TYPE, "#" + property.getType());
       }
       writeOperations(property.getOperations(), json);
-//      final List<Property> values =
-//          property.isNull() ? Collections.<Property> emptyList() : property.asComplex().getValue();
       writeProperties(metadata, type, property.asComplex(),
               options == null ? null : options.getSelect(),
               options == null ? null : options.getExpand(),
               null,
               null,
               json);
-//      if (!property.isNull() && property.isComplex()) {
-//        writeNavigationProperties(metadata, type, property.asComplex(),
-//            options == null ? null : options.getExpand(), null, null, json);
-//      }
       json.writeEndObject();
 
       json.close();
