@@ -28,7 +28,6 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
-import jdk.nashorn.internal.ir.annotations.Reference;
 import org.apache.olingo.commons.api.Constants;
 import org.apache.olingo.commons.api.data.AbstractEntityCollection;
 import org.apache.olingo.commons.api.data.ComplexValue;
@@ -1141,7 +1140,7 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
     }
   }
 
-  @Reference
+  @Override
   public SerializerResult reference(final ServiceMetadata metadata, final EdmEntitySet edmEntitySet,
       final Entity entity, final ReferenceSerializerOptions options) throws SerializerException {
     OutputStream outputStream = null;
