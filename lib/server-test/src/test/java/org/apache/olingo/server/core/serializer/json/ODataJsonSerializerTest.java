@@ -1615,7 +1615,7 @@ public class ODataJsonSerializerTest {
     final EdmProperty edmProperty = (EdmProperty) edmEntitySet.getEntityType().getProperty("CollPropertyComp");
     final Property property = data.readAll(edmEntitySet).getEntities().get(0).getProperty(edmProperty.getName());
     final String resultString = IOUtils.toString(serializerNoMetadata
-        .complexCollection(metadata, (EdmComplexType) edmProperty.getType(), property,null).getContent());
+        .complexCollection(metadata, (EdmComplexType) edmProperty.getType(), property, null).getContent());
     Assert.assertEquals("{\"value\":[{\"PropertyInt16\":123,\"PropertyString\":\"TEST 1\"},"
         + "{\"PropertyInt16\":456,\"PropertyString\":\"TEST 2\"},"
         + "{\"PropertyInt16\":789,\"PropertyString\":\"TEST 3\"}]}",
@@ -2079,153 +2079,154 @@ public class ODataJsonSerializerTest {
     point.setY(y);
     return point;
   }
-  
-   @Test
-   public void expandCycle() throws Exception {
-     final EdmEntitySet edmEntitySet = entityContainer.getEntitySet("ESPeople");
-     final Entity entity = data.readAll(edmEntitySet).getEntities().get(1);
-     ExpandItem mockExpandItem = ExpandSelectMock.mockExpandItem(edmEntitySet, "friends");
-     LevelsExpandOption levels = Mockito.mock(LevelsExpandOption.class);
-     Mockito.when(levels.isMax()).thenReturn(Boolean.TRUE);
-     Mockito.when(mockExpandItem.getLevelsOption()).thenReturn(levels);
-     final ExpandOption expand = ExpandSelectMock.mockExpandOption(Collections.singletonList(
-         mockExpandItem));
-     InputStream result = serializer.entity(metadata, edmEntitySet.getEntityType(), entity,
-         EntitySerializerOptions.with()
-             .contextURL(ContextURL.with().entitySet(edmEntitySet).suffix(Suffix.ENTITY).build())
-             .expand(expand)
-             .build()).getContent();
-     final String resultString = IOUtils.toString(result);
-     String expected = "{" +
-         "\"@odata.context\":\"$metadata#ESPeople/$entity\"," +
-         "\"@odata.metadataEtag\":\"W/\\\"metadataETag\\\"\"," +
-         "\"id\":1," +
-         "\"name\":\"B\"," +
-         "\"friends\":[" +
-               "{" +
-                  "\"id\":0," +
-                  "\"name\":\"A\"," +
-                  "\"friends\":[" +
-                     "{" +
-                        "\"@odata.id\":\"ESPeople(1)\"" +
-                     "}," +
-                     "{" +
-                        "\"id\":2," +
-                        "\"name\":\"C\"," +
-                        "\"friends\":[" +
-                           "{" +
-                              "\"@odata.id\":\"ESPeople(0)\"" +
-                           "}," +
-                           "{" +
-                              "\"id\":3," +
-                              "\"name\":\"D\"," +
-                              "\"friends\":[" +
-                              "]" +
-                           "}" +
-                        "]" +
-                     "}" +
-                  "]" +
-               "}," +
-               "{" +
-                  "\"id\":2," +
-                  "\"name\":\"C\"," +
-                  "\"friends\":[" +
-                     "{" +
-                        "\"id\":0," +
-                        "\"name\":\"A\"," +
-                        "\"friends\":[" +
-                           "{" +
-                              "\"@odata.id\":\"ESPeople(1)\"" +
-                           "}," +
-                           "{" +
-                              "\"@odata.id\":\"ESPeople(2)\"" +
-                           "}" +
-                        "]" +
-                     "}," +
-                     "{" +
-                        "\"id\":3," +
-                        "\"name\":\"D\"," +
-                        "\"friends\":[" +
-                        "]" +
-                     "}" +
-                  "]" +
-               "}" +
-            "]" +
-         "}";
-     Assert.assertEquals(expected, resultString);
-   }
 
-   @Test
-   public void expandCycleWith3Level() throws Exception {
-     final EdmEntitySet edmEntitySet = entityContainer.getEntitySet("ESPeople");
-     final Entity entity = data.readAll(edmEntitySet).getEntities().get(1);
-     ExpandItem mockExpandItem = ExpandSelectMock.mockExpandItem(edmEntitySet, "friends");
-     LevelsExpandOption levels = Mockito.mock(LevelsExpandOption.class);
-     Mockito.when(levels.isMax()).thenReturn(Boolean.FALSE);
-     Mockito.when(levels.getValue()).thenReturn(3);
-     Mockito.when(mockExpandItem.getLevelsOption()).thenReturn(levels);
-     final ExpandOption expand = ExpandSelectMock.mockExpandOption(Collections.singletonList(
-         mockExpandItem));
-     InputStream result = serializer.entity(metadata, edmEntitySet.getEntityType(), entity,
-         EntitySerializerOptions.with()
-             .contextURL(ContextURL.with().entitySet(edmEntitySet).suffix(Suffix.ENTITY).build())
-             .expand(expand)
-             .build()).getContent();
-     final String resultString = IOUtils.toString(result);
-     String expected = "{" +
-       "\"@odata.context\":\"$metadata#ESPeople/$entity\"," +
-       "\"@odata.metadataEtag\":\"W/\\\"metadataETag\\\"\"," +
-       "\"id\":1," +
-       "\"name\":\"B\"," +
-       "\"friends\":[" +
-         "{" +
-           "\"id\":0," +
-           "\"name\":\"A\"," +
-           "\"friends\":[" +
-             "{" +
-               "\"@odata.id\":\"ESPeople(1)\"" +
-             "}," +
-             "{" +
-               "\"id\":2," +
-               "\"name\":\"C\"," +
-               "\"friends\":[" +
-                 "{" +
-                   "\"@odata.id\":\"ESPeople(0)\"" +
-                 "}," +
-                 "{" +
-                   "\"id\":3," +
-                   "\"name\":\"D\"" +
-                 "}" +
-               "]" +
-             "}" +
-           "]" +
-         "}," +
-         "{" +
-           "\"id\":2," +
-           "\"name\":\"C\"," +
-           "\"friends\":[" +
-             "{" +
-               "\"id\":0," +
-               "\"name\":\"A\"," +
-               "\"friends\":[" +
-                 "{" +
-                   "\"@odata.id\":\"ESPeople(1)\"" +
-                 "}," +
-                 "{" +
-                   "\"@odata.id\":\"ESPeople(2)\"" +
-                 "}" +
-               "]" +
-             "}," +
-             "{" +
-               "\"id\":3," +
-               "\"name\":\"D\"," +
-               "\"friends\":[" +
-               "]" +
-             "}" +
-           "]" +
-         "}" +
-       "]" +
-       "}";
-     Assert.assertEquals(expected, resultString);
-   }
+  @Test
+  public void expandCycle() throws Exception {
+    final EdmEntitySet edmEntitySet = entityContainer.getEntitySet("ESPeople");
+    final Entity entity = data.readAll(edmEntitySet).getEntities().get(1);
+    ExpandItem mockExpandItem = ExpandSelectMock.mockExpandItem(edmEntitySet, "friends");
+    LevelsExpandOption levels = Mockito.mock(LevelsExpandOption.class);
+    Mockito.when(levels.isMax()).thenReturn(Boolean.TRUE);
+    Mockito.when(mockExpandItem.getLevelsOption()).thenReturn(levels);
+    final ExpandOption expand = ExpandSelectMock.mockExpandOption(Collections.singletonList(mockExpandItem));
+    InputStream result = serializer.entity(metadata, edmEntitySet.getEntityType(), entity,
+        EntitySerializerOptions.with()
+            .contextURL(ContextURL.with().entitySet(edmEntitySet).suffix(Suffix.ENTITY).build())
+            .expand(expand)
+            .build())
+        .getContent();
+    final String resultString = IOUtils.toString(result);
+    final String expected = "{" + 
+         "\"@odata.context\":\"$metadata#ESPeople/$entity\"," + 
+         "\"@odata.metadataEtag\":\"W/\\\"metadataETag\\\"\"," + 
+         "\"id\":1," + 
+         "\"name\":\"B\"," + 
+         "\"friends\":[" + 
+               "{" + 
+                  "\"id\":0," + 
+                  "\"name\":\"A\"," + 
+                  "\"friends\":[" + 
+                     "{" + 
+                        "\"@odata.id\":\"ESPeople(1)\"" + 
+                     "}," + 
+                     "{" + 
+                        "\"id\":2," + 
+                        "\"name\":\"C\"," + 
+                        "\"friends\":[" + 
+                           "{" + 
+                              "\"@odata.id\":\"ESPeople(0)\"" + 
+                           "}," + 
+                           "{" + 
+                              "\"id\":3," + 
+                              "\"name\":\"D\"," + 
+                              "\"friends\":[" + 
+                              "]" + 
+                           "}" + 
+                        "]" + 
+                     "}" + 
+                  "]" + 
+               "}," + 
+               "{" + 
+                  "\"id\":2," + 
+                  "\"name\":\"C\"," + 
+                  "\"friends\":[" + 
+                     "{" + 
+                        "\"id\":0," + 
+                        "\"name\":\"A\"," + 
+                        "\"friends\":[" + 
+                           "{" + 
+                              "\"@odata.id\":\"ESPeople(1)\"" + 
+                           "}," + 
+                           "{" + 
+                              "\"@odata.id\":\"ESPeople(2)\"" + 
+                           "}" + 
+                        "]" + 
+                     "}," + 
+                     "{" + 
+                        "\"id\":3," + 
+                        "\"name\":\"D\"," + 
+                        "\"friends\":[" + 
+                        "]" + 
+                     "}" + 
+                  "]" + 
+               "}" + 
+            "]" + 
+         "}";
+    Assert.assertEquals(expected, resultString);
+  }
+
+  @Test
+  public void expandCycleWith3Level() throws Exception {
+    final EdmEntitySet edmEntitySet = entityContainer.getEntitySet("ESPeople");
+    final Entity entity = data.readAll(edmEntitySet).getEntities().get(1);
+    ExpandItem mockExpandItem = ExpandSelectMock.mockExpandItem(edmEntitySet, "friends");
+    LevelsExpandOption levels = Mockito.mock(LevelsExpandOption.class);
+    Mockito.when(levels.isMax()).thenReturn(Boolean.FALSE);
+    Mockito.when(levels.getValue()).thenReturn(3);
+    Mockito.when(mockExpandItem.getLevelsOption()).thenReturn(levels);
+    final ExpandOption expand = ExpandSelectMock.mockExpandOption(Collections.singletonList(mockExpandItem));
+    InputStream result = serializer.entity(metadata, edmEntitySet.getEntityType(), entity,
+        EntitySerializerOptions.with()
+            .contextURL(ContextURL.with().entitySet(edmEntitySet).suffix(Suffix.ENTITY).build())
+            .expand(expand)
+            .build())
+        .getContent();
+    final String resultString = IOUtils.toString(result);
+    final String expected = "{" +
+       "\"@odata.context\":\"$metadata#ESPeople/$entity\"," + 
+       "\"@odata.metadataEtag\":\"W/\\\"metadataETag\\\"\"," + 
+       "\"id\":1," + 
+       "\"name\":\"B\"," + 
+       "\"friends\":[" + 
+         "{" + 
+           "\"id\":0," + 
+           "\"name\":\"A\"," + 
+           "\"friends\":[" + 
+             "{" + 
+               "\"@odata.id\":\"ESPeople(1)\"" + 
+             "}," + 
+             "{" + 
+               "\"id\":2," + 
+               "\"name\":\"C\"," + 
+               "\"friends\":[" + 
+                 "{" + 
+                   "\"@odata.id\":\"ESPeople(0)\"" + 
+                 "}," + 
+                 "{" + 
+                   "\"id\":3," + 
+                   "\"name\":\"D\"" + 
+                 "}" + 
+               "]" + 
+             "}" + 
+           "]" + 
+         "}," + 
+         "{" + 
+           "\"id\":2," + 
+           "\"name\":\"C\"," + 
+           "\"friends\":[" + 
+             "{" + 
+               "\"id\":0," + 
+               "\"name\":\"A\"," + 
+               "\"friends\":[" + 
+                 "{" + 
+                   "\"@odata.id\":\"ESPeople(1)\"" + 
+                 "}," + 
+                 "{" + 
+                   "\"@odata.id\":\"ESPeople(2)\"" + 
+                 "}" + 
+               "]" + 
+             "}," + 
+             "{" + 
+               "\"id\":3," + 
+               "\"name\":\"D\"," + 
+               "\"friends\":[" + 
+               "]" + 
+             "}" + 
+           "]" + 
+         "}" + 
+       "]" + 
+       "}"; 
+    Assert.assertEquals(expected, resultString);
+  }
 }
+

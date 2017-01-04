@@ -18,16 +18,6 @@
  */
 package org.apache.olingo.server.core.serializer.utils;
 
-import org.apache.olingo.server.api.serializer.SerializerException;
-import org.apache.olingo.server.api.uri.UriResource;
-import org.apache.olingo.server.api.uri.UriResourceNavigation;
-import org.apache.olingo.server.api.uri.UriResourceProperty;
-import org.apache.olingo.server.api.uri.UriResourceRef;
-import org.apache.olingo.server.api.uri.queryoption.ExpandItem;
-import org.apache.olingo.server.api.uri.queryoption.ExpandOption;
-import org.apache.olingo.server.api.uri.queryoption.SelectItem;
-import org.apache.olingo.server.api.uri.queryoption.SelectOption;
-
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.HashSet;
@@ -35,6 +25,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.Iterator;
 
+import org.apache.olingo.server.api.serializer.SerializerException;
+import org.apache.olingo.server.api.uri.UriResource;
+import org.apache.olingo.server.api.uri.UriResourceNavigation;
+import org.apache.olingo.server.api.uri.UriResourceProperty;
+import org.apache.olingo.server.api.uri.queryoption.ExpandItem;
+import org.apache.olingo.server.api.uri.queryoption.ExpandOption;
+import org.apache.olingo.server.api.uri.queryoption.SelectItem;
+import org.apache.olingo.server.api.uri.queryoption.SelectOption;
 
 public abstract class ExpandSelectHelper {
 
@@ -109,7 +107,7 @@ public abstract class ExpandSelectHelper {
       final List<UriResource> parts = item.getResourcePath().getUriResourceParts();
       final UriResource resource = parts.get(0);
       if (resource instanceof UriResourceProperty
-              && propertyName.equals(((UriResourceProperty) resource).getProperty().getName())) {
+          && propertyName.equals(((UriResourceProperty) resource).getProperty().getName())) {
         if (parts.size() > 1) {
           List<String> path = new ArrayList<String>();
           for (final UriResource part : parts.subList(1, parts.size())) {
@@ -136,7 +134,7 @@ public abstract class ExpandSelectHelper {
   }
 
   public static Set<List<String>> getReducedPaths(final Set<List<String>> selectedPaths,
-                                                  final String propertyName) {
+             final String propertyName) {
     if (selectedPaths == null) {
       return null;
     }
@@ -152,6 +150,7 @@ public abstract class ExpandSelectHelper {
     }
     return reducedPaths;
   }
+
   public static boolean hasExpand(final ExpandOption expand) {
     return expand != null && expand.getExpandItems() != null && !expand.getExpandItems().isEmpty();
   }
@@ -175,7 +174,7 @@ public abstract class ExpandSelectHelper {
   }
 
   public static Set<String> getExpandedPropertyNames(final List<ExpandItem> expandItems)
-          throws SerializerException {
+      throws SerializerException {
     Set<String> expanded = new HashSet<String>();
     for (final ExpandItem item : expandItems) {
       if (item.isStar()) {
@@ -198,7 +197,7 @@ public abstract class ExpandSelectHelper {
       final List<UriResource> resourceParts = item.getResourcePath().getUriResourceParts();
       final UriResource resource = resourceParts.get(0);
       if (resource instanceof UriResourceNavigation
-              && propertyName.equals(((UriResourceNavigation) resource).getProperty().getName())) {
+          && propertyName.equals(((UriResourceNavigation) resource).getProperty().getName())) {
         return item;
       }
     }

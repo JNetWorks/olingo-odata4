@@ -278,7 +278,7 @@ public class ExpandWithSystemQueryOptionsITCase extends AbstractParamTecSvcITCas
         fail();
       }
     }
-  }
+  }  
   
   @Test
   public void reference() throws Exception {
@@ -303,17 +303,17 @@ public class ExpandWithSystemQueryOptionsITCase extends AbstractParamTecSvcITCas
 
       if ((propInt16.equals(1) ||propInt16.equals((short)1)) && propString.equals("1")) {
         assertEquals(2, entitySet.getEntities().size());
-        assertEquals("ESTwoKeyNav(PropertyInt16=1,PropertyString='1')",
+        assertEquals("ESTwoKeyNav(PropertyInt16=1,PropertyString='1')", 
             entitySet.getEntities().get(0).getId().toString());
-        assertEquals("ESTwoKeyNav(PropertyInt16=1,PropertyString='2')",
-            entitySet.getEntities().get(1).getId().toString());
+        assertEquals("ESTwoKeyNav(PropertyInt16=1,PropertyString='2')", 
+            entitySet.getEntities().get(1).getId().toString());        
       } else if ((propInt16.equals(1) ||propInt16.equals((short)1)) && propString.equals("2")) {
         assertEquals(1, entitySet.getEntities().size());
-        assertEquals("ESTwoKeyNav(PropertyInt16=1,PropertyString='1')",
+        assertEquals("ESTwoKeyNav(PropertyInt16=1,PropertyString='1')", 
             entitySet.getEntities().get(0).getId().toString());
       } else if ((propInt16.equals(2) ||propInt16.equals((short)2)) && propString.equals("1")) {
         assertEquals(1, entitySet.getEntities().size());
-        assertEquals("ESTwoKeyNav(PropertyInt16=1,PropertyString='2')",
+        assertEquals("ESTwoKeyNav(PropertyInt16=1,PropertyString='2')", 
             entitySet.getEntities().get(0).getId().toString());
       } else if ((propInt16.equals(3) ||propInt16.equals((short)3)) && propString.equals("1")) {
         assertEquals(0, entitySet.getEntities().size());
@@ -321,7 +321,7 @@ public class ExpandWithSystemQueryOptionsITCase extends AbstractParamTecSvcITCas
         fail();
       }
     }
-  }
+  }  
   
   @Test
   public void singleEntityWithExpand() {
@@ -584,3 +584,4 @@ public class ExpandWithSystemQueryOptionsITCase extends AbstractParamTecSvcITCas
     return response;
   }
 }
+

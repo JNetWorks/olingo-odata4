@@ -141,34 +141,6 @@ public class Entity extends Linked {
   }
 
   /**
-   * Gets properties.
-   *
-   * @return properties.
-   */
-//  public List<Property> getProperties() {
-//    return properties;
-//  }
-//
-//  /**
-//   * Gets property with given name.
-//   *
-//   * @param name property name
-//   * @return property with given name if found, null otherwise
-//   */
-//  public Property getProperty(final String name) {
-//    Property result = null;
-//
-//    for (Property property : properties) {
-//      if (name.equals(property.getName())) {
-//        result = property;
-//        break;
-//      }
-//    }
-//
-//    return result;
-//  }
-
-  /**
    * Gets media content type.
    *
    * @return media content type.

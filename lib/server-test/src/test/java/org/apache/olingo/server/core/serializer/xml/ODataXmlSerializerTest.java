@@ -1765,7 +1765,7 @@ public class ODataXmlSerializerTest {
         "  </a:content>\n" +
         "   <m:action metadata=\"#olingo.odata.test1.BAETAllPrimRT\" "+
         "      title=\"olingo.odata.test1.BAETAllPrimRT\" "+
-        "      target=\"ESAllPrim(32767)/olingo.odata.test1.BAETAllPrimRT\" />\n" +
+        "      target=\"ESAllPrim(32767)/olingo.odata.test1.BAETAllPrimRT\" />\n" + 
         "</a:entry>\n" +
         "";
         checkXMLEqual(expected, resultString);
@@ -1830,7 +1830,7 @@ public class ODataXmlSerializerTest {
         "  </a:content>\n" +
         "   <m:action metadata=\"#olingo.odata.test1.BAETAllPrimRT\" "+
         "      title=\"olingo.odata.test1.BAETAllPrimRT\" "+
-        "      target=\"ESAllPrim(-32768)/olingo.odata.test1.BAETAllPrimRT\" />\n" +
+        "      target=\"ESAllPrim(-32768)/olingo.odata.test1.BAETAllPrimRT\" />\n" + 
         "</a:entry>";
     checkXMLEqual(expected, resultString);
   }
@@ -1917,7 +1917,7 @@ public class ODataXmlSerializerTest {
         "          </a:content>\n" +
         "        <m:action metadata=\"#olingo.odata.test1.BAETAllPrimRT\" "+
         "          title=\"olingo.odata.test1.BAETAllPrimRT\" "+
-        "          target=\"ESAllPrim(-32768)/olingo.odata.test1.BAETAllPrimRT\" />\n" +
+        "          target=\"ESAllPrim(-32768)/olingo.odata.test1.BAETAllPrimRT\" />\n" + 
         "        </a:entry>\n" +
         "        <a:entry>\n" +
         "          <a:id>ESAllPrim(0)</a:id>\n" +
@@ -2070,7 +2070,7 @@ public class ODataXmlSerializerTest {
         "          </a:content>\n" +
         "        <m:action metadata=\"#olingo.odata.test1.BAETAllPrimRT\" "+
         "          title=\"olingo.odata.test1.BAETAllPrimRT\" "+
-        "          target=\"ESAllPrim(0)/olingo.odata.test1.BAETAllPrimRT\" />\n" +
+        "          target=\"ESAllPrim(0)/olingo.odata.test1.BAETAllPrimRT\" />\n" + 
         "        </a:entry>\n" +
         "      </a:feed>\n" +
         "    </m:inline>\n" +
@@ -2749,3 +2749,4 @@ public class ODataXmlSerializerTest {
   };
   
 }
+

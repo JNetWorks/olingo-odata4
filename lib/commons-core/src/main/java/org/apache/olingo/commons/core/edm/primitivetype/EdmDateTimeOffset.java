@@ -22,7 +22,6 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -68,13 +67,8 @@ public final class EdmDateTimeOffset extends SingletonPrimitiveType {
     }
     dateTimeValue.clear();
 
-    short year = Short.parseShort(matcher.group(1));
-    if (year < 0) {
-      dateTimeValue.set(Calendar.ERA, GregorianCalendar.BC);
-    }
-
     dateTimeValue.set(
-        Math.abs(year),
+        Short.parseShort(matcher.group(1)),
         Byte.parseByte(matcher.group(2)) - 1, // month is zero-based
         Byte.parseByte(matcher.group(3)),
         Byte.parseByte(matcher.group(4)),
@@ -180,15 +174,8 @@ public final class EdmDateTimeOffset extends SingletonPrimitiveType {
 
     StringBuilder result = new StringBuilder();
     final int year = dateTimeValue.get(Calendar.YEAR);
-    if (year < 0 || dateTimeValue.get(Calendar.ERA) == GregorianCalendar.BC) {
-      result.append("-");
-      result.append(Math.abs(year));
-    } else if (year > 10000) {
-      result.append(year);
-    } else {
-      appendTwoDigits(result, year / 100);
-      appendTwoDigits(result, year % 100);
-    }
+    appendTwoDigits(result, year / 100);
+    appendTwoDigits(result, year % 100);
     result.append('-');
     appendTwoDigits(result, dateTimeValue.get(Calendar.MONTH) + 1); // month is zero-based
     result.append('-');
