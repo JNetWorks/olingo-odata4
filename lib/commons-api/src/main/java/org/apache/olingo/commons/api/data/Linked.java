@@ -29,6 +29,7 @@ public abstract class Linked extends AbstractODataObject {
   private final List<Link> associationLinks = new ArrayList<Link>();
   private final List<Link> navigationLinks = new ArrayList<Link>();
   private final List<Link> bindingLinks = new ArrayList<Link>();
+  protected final List<Property> properties = new ArrayList<Property>();
 
   protected Link getOneByTitle(final String name, final List<Link> links) {
     Link result = null;
@@ -41,6 +42,35 @@ public abstract class Linked extends AbstractODataObject {
 
     return result;
   }
+
+  /**
+   * Gets properties.
+   *
+   * @return properties.
+   */
+  public List<Property> getProperties() {
+    return properties;
+  }
+
+  /**
+   * Gets property with given name.
+   *
+   * @param name property name
+   * @return property with given name if found, null otherwise
+   */
+  public Property getProperty(final String name) {
+    Property result = null;
+
+    for (Property property : properties) {
+      if (name.equals(property.getName())) {
+        result = property;
+        break;
+      }
+    }
+
+    return result;
+  }
+
 
   /**
    * Gets association link with given name, if available, otherwise <tt>null</tt>.

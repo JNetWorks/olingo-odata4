@@ -18,11 +18,6 @@
  */
 package org.apache.olingo.server.core.serializer.utils;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
 import org.apache.olingo.commons.api.edm.EdmComplexType;
 import org.apache.olingo.commons.api.edm.EdmProperty;
 import org.apache.olingo.commons.api.edm.EdmStructuredType;
@@ -36,6 +31,11 @@ import org.apache.olingo.server.api.uri.queryoption.ExpandOption;
 import org.apache.olingo.server.api.uri.queryoption.SelectItem;
 import org.apache.olingo.server.api.uri.queryoption.SelectOption;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+
 public final class ContextURLHelper {
 
   private ContextURLHelper() { /* private ctor for helper class */}
@@ -44,14 +44,16 @@ public final class ContextURLHelper {
    * Builds a list of selected Properties for the ContextURL,
    * taking care to preserve the order as defined in the EDM;
    * returns NULL if no selection has taken place.
-   * @param type the structured type
+   *
+   * @param type   the structured type
    * @param expand the Expand option (from the URL's $expand query option)
    * @param select the Select option (from the URL's $select query option)
    * @return a select-list String
    * @throws SerializerException if an unsupported feature is used
    */
   public static String buildSelectList(final EdmStructuredType type,
-      final ExpandOption expand, final SelectOption select) throws SerializerException {
+                                       final ExpandOption expand, final SelectOption select)
+          throws SerializerException {
     StringBuilder result = new StringBuilder();
     if (ExpandSelectHelper.hasSelect(select)) {
       handleSelect(type, select, result);
@@ -64,7 +66,7 @@ public final class ContextURLHelper {
   }
 
   private static void handleSelect(final EdmStructuredType type, final SelectOption select,
-      final StringBuilder result) {
+                                   final StringBuilder result) {
     if (ExpandSelectHelper.isAll(select)) {
       result.append('*');
     } else {
@@ -105,16 +107,16 @@ public final class ContextURLHelper {
   }
 
   private static void handleExpand(final EdmStructuredType type, final ExpandOption expand, final StringBuilder result)
-      throws SerializerException {
+          throws SerializerException {
     final Set<String> expandedPropertyNames = ExpandSelectHelper.getExpandedPropertyNames(expand.getExpandItems());
     for (final String propertyName : type.getNavigationPropertyNames()) {
       if (expandedPropertyNames.contains(propertyName)) {
         final ExpandItem expandItem = ExpandSelectHelper.getExpandItem(expand.getExpandItems(), propertyName);
         if (ExpandSelectHelper.hasExpand(expandItem.getExpandOption())
-            && !ExpandSelectHelper.isExpandAll(expandItem.getExpandOption())
-            || ExpandSelectHelper.hasSelect(expandItem.getSelectOption())) {
+                && !ExpandSelectHelper.isExpandAll(expandItem.getExpandOption())
+                || ExpandSelectHelper.hasSelect(expandItem.getSelectOption())) {
           final String innerSelectList = buildSelectList(type.getNavigationProperty(propertyName).getType(),
-              expandItem.getExpandOption(), expandItem.getSelectOption());
+                  expandItem.getExpandOption(), expandItem.getSelectOption());
           if (innerSelectList != null) {
             if (result.length() > 0) {
               result.append(',');
@@ -156,7 +158,7 @@ public final class ContextURLHelper {
   }
 
   private static List<List<String>> getComplexSelectedPaths(final EdmProperty edmProperty,
-      final Set<List<String>> selectedPaths) {
+                                                            final Set<List<String>> selectedPaths) {
     List<List<String>> result = new ArrayList<List<String>>();
     if (selectedPaths == null) {
       List<String> path = new LinkedList<String>();
@@ -167,8 +169,8 @@ public final class ContextURLHelper {
       for (final String complexPropertyName : type.getPropertyNames()) {
         if (ExpandSelectHelper.isSelected(selectedPaths, complexPropertyName)) {
           List<List<String>> complexSelectedPaths = getComplexSelectedPaths(
-              (EdmProperty) type.getProperty(complexPropertyName),
-              ExpandSelectHelper.getReducedSelectedPaths(selectedPaths, complexPropertyName));
+                  (EdmProperty) type.getProperty(complexPropertyName),
+                  ExpandSelectHelper.getReducedPaths(selectedPaths, complexPropertyName));
           for (final List<String> path : complexSelectedPaths) {
             path.add(0, edmProperty.getName());
             result.add(path);

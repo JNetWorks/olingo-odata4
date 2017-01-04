@@ -18,11 +18,6 @@
  */
 package org.apache.olingo.server.core.serializer.utils;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.apache.olingo.server.api.serializer.SerializerException;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceNavigation;
@@ -31,6 +26,14 @@ import org.apache.olingo.server.api.uri.queryoption.ExpandItem;
 import org.apache.olingo.server.api.uri.queryoption.ExpandOption;
 import org.apache.olingo.server.api.uri.queryoption.SelectItem;
 import org.apache.olingo.server.api.uri.queryoption.SelectOption;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.Iterator;
+
 
 public abstract class ExpandSelectHelper {
 
@@ -62,13 +65,47 @@ public abstract class ExpandSelectHelper {
     return selected;
   }
 
+  public static Set<List<String>> getSelectedPaths(final List<SelectItem> selectItems) {
+    Set<List<String>> selectedPaths = new HashSet<List<String>>();
+    for (final SelectItem item : selectItems) {
+      final List<UriResource> parts = item.getResourcePath().getUriResourceParts();
+      List<String> path = new ArrayList<String>();
+      for (final UriResource part : parts) {
+        if (part instanceof UriResourceProperty) {
+          path.add(((UriResourceProperty) part).getProperty().getName());
+        }
+      }
+      selectedPaths.add(path);
+    }
+    return selectedPaths.isEmpty() ? null : selectedPaths;
+  }
+
+  public static Set<List<String>> getExpandedPaths(final List<ExpandItem> selectItems) {
+    Set<List<String>> expandedPaths = new HashSet<List<String>>();
+    for (final ExpandItem item : selectItems) {
+      final List<UriResource> parts = item.getResourcePath().getUriResourceParts();
+      List<String> path = new ArrayList<String>();
+      if (parts.get(parts.size() - 1) instanceof UriResourceNavigation) {
+        for (int i = 0; i < parts.size() - 1; i++) {
+          UriResource part = parts.get(i);
+          if (part instanceof UriResourceProperty) {
+            path.add(((UriResourceProperty) part).getProperty().getName());
+          }
+        }
+        path.add(((UriResourceNavigation) parts.get(parts.size() - 1)).getProperty().getName());
+        expandedPaths.add(path);
+      }
+    }
+    return expandedPaths.isEmpty() ? null : expandedPaths;
+  }
+
   public static Set<List<String>> getSelectedPaths(final List<SelectItem> selectItems, final String propertyName) {
     Set<List<String>> selectedPaths = new HashSet<List<String>>();
     for (final SelectItem item : selectItems) {
       final List<UriResource> parts = item.getResourcePath().getUriResourceParts();
       final UriResource resource = parts.get(0);
       if (resource instanceof UriResourceProperty
-          && propertyName.equals(((UriResourceProperty) resource).getProperty().getName())) {
+              && propertyName.equals(((UriResourceProperty) resource).getProperty().getName())) {
         if (parts.size() > 1) {
           List<String> path = new ArrayList<String>();
           for (final UriResource part : parts.subList(1, parts.size())) {
@@ -94,8 +131,26 @@ public abstract class ExpandSelectHelper {
     return false;
   }
 
-  public static Set<List<String>> getReducedSelectedPaths(final Set<List<String>> selectedPaths,
-      final String propertyName) {
+//  public static Set<List<String>> getReducedPaths(final Set<List<String>> selectedPaths,
+//                                                  final String propertyName) {
+//    Set<List<String>> reducedPaths = new HashSet<List<String>>();
+//    for (final List<String> path : selectedPaths) {
+//      if (propertyName.equals(path.get(0))) {
+//        if (path.size() > 1) {
+//          reducedPaths.add(path.subList(1, path.size()));
+//        } else {
+//          return null;
+//        }
+//      }
+//    }
+//    return reducedPaths.isEmpty() ? null : reducedPaths;
+//  }
+//
+  public static Set<List<String>> getReducedPaths(final Set<List<String>> selectedPaths,
+                                                  final String propertyName) {
+    if (selectedPaths == null) {
+      return null;
+    }
     Set<List<String>> reducedPaths = new HashSet<List<String>>();
     for (final List<String> path : selectedPaths) {
       if (propertyName.equals(path.get(0))) {
@@ -106,9 +161,8 @@ public abstract class ExpandSelectHelper {
         }
       }
     }
-    return reducedPaths.isEmpty() ? null : reducedPaths;
+    return reducedPaths;
   }
-
   public static boolean hasExpand(final ExpandOption expand) {
     return expand != null && expand.getExpandItems() != null && !expand.getExpandItems().isEmpty();
   }
@@ -121,20 +175,23 @@ public abstract class ExpandSelectHelper {
     }
     return false;
   }
-  
+
   public static ExpandItem getExpandAll(final ExpandOption expand) {
-      for (final ExpandItem item : expand.getExpandItems()) {
-        if (item.isStar()) {
-          return item;
-        }
+    for (final ExpandItem item : expand.getExpandItems()) {
+      if (item.isStar()) {
+        return item;
       }
-      return null;
     }
-  
+    return null;
+  }
+
   public static Set<String> getExpandedPropertyNames(final List<ExpandItem> expandItems)
-      throws SerializerException {
+          throws SerializerException {
     Set<String> expanded = new HashSet<String>();
     for (final ExpandItem item : expandItems) {
+      if (item.isStar()) {
+        continue;
+      }
       final List<UriResource> resourceParts = item.getResourcePath().getUriResourceParts();
       final UriResource resource = resourceParts.get(0);
       if (resource instanceof UriResourceNavigation) {
@@ -146,16 +203,59 @@ public abstract class ExpandSelectHelper {
 
   public static ExpandItem getExpandItem(final List<ExpandItem> expandItems, final String propertyName) {
     for (final ExpandItem item : expandItems) {
-      if (item.isStar()) {
-          continue;
-      }
-      final UriResource resource = item.getResourcePath().getUriResourceParts().get(0);
+      final List<UriResource> resourceParts = item.getResourcePath().getUriResourceParts();
+      final UriResource resource = resourceParts.get(0);
       if (resource instanceof UriResourceNavigation
-          && propertyName.equals(((UriResourceNavigation) resource).getProperty().getName())) {
+              && propertyName.equals(((UriResourceNavigation) resource).getProperty().getName())) {
         return item;
       }
     }
     return null;
   }
 
+  public static boolean resourceEqualsPath(List<UriResource> resourceParts, LinkedList<String> path) {
+    if (resourceParts.size() != path.size()) {
+      return false;
+    }
+
+    Iterator<UriResource> selectIter = resourceParts.iterator();
+    Iterator<String> pathIter = path.iterator();
+
+    while (selectIter.hasNext()) {
+      if (!selectIter.next().getSegmentValue().equals(pathIter.next())) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  public static Set<String> getSelected(final Set<List<String>> selectedPaths) {
+    HashSet<String> selected = new HashSet<String>();
+    for (List<String> path : selectedPaths) {
+      selected.add(path.get(0));
+    }
+    return selected;
+  }
+
+  public static Set<String> getExpanded(final Set<List<String>> expandedPaths) {
+    HashSet<String> expanded = new HashSet<String>();
+    for (List<String> path : expandedPaths) {
+      if (path.size() == 1) {
+        expanded.add(path.get(0));
+      }
+    }
+    return expanded;
+  }
+
+  public static ExpandItem getExpandItem(final List<ExpandItem> expandItems, final LinkedList<String> path) {
+    for (ExpandItem item : expandItems) {
+      List<UriResource> uriResourceParts = item.getResourcePath().getUriResourceParts();
+      if (resourceEqualsPath(uriResourceParts, path)) {
+        return item;
+      }
+    }
+
+    return null;
+  }
 }
