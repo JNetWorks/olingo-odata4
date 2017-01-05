@@ -84,9 +84,7 @@ public abstract class ExpandSelectHelper {
     for (final ExpandItem item : selectItems) {
       List<UriResource> parts = item.getResourcePath().getUriResourceParts();
       List<String> path = new ArrayList<String>();
-      if (parts.size() > 0 && !(parts.get(parts.size() - 1) instanceof UriResourceNavigation)) {
-        parts = parts.subList(0, parts.size() - 1);
-      }
+      parts = trimOptions(parts);
       if (parts.get(parts.size() - 1) instanceof UriResourceNavigation) {
         for (int i = 0; i < parts.size() - 1; i++) {
           UriResource part = parts.get(i);
@@ -204,8 +202,17 @@ public abstract class ExpandSelectHelper {
     return null;
   }
 
+  public static List<UriResource> trimOptions(List<UriResource> resourceParts) {
+    if (!(resourceParts.get(resourceParts.size() - 1) instanceof UriResourceNavigation)) {
+      resourceParts = resourceParts.subList(0, resourceParts.size() - 1);
+    }
+    return resourceParts;
+  }
+
   public static boolean resourceEqualsPath(List<UriResource> resourceParts, LinkedList<String> path) {
-    if (resourceParts.size() - path.size() > 1) {
+    resourceParts = trimOptions(resourceParts);
+
+    if (resourceParts.size() != path.size()) {
       return false;
     }
 
