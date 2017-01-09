@@ -36,6 +36,7 @@ import org.apache.olingo.commons.api.data.ComplexValue;
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.EntityCollection;
 import org.apache.olingo.commons.api.data.Link;
+import org.apache.olingo.commons.api.data.Linked;
 import org.apache.olingo.commons.api.data.Operation;
 import org.apache.olingo.commons.api.data.Property;
 import org.apache.olingo.commons.api.data.ValueType;
@@ -67,6 +68,7 @@ public class DataCreator {
     data.put("ESTwoPrim", createESTwoPrim(edm, odata));
     data.put("ESAllPrim", createESAllPrim(edm, odata));
     data.put("ESCompAllPrim", createESCompAllPrim(edm, odata));
+    data.put("ESCompNavProp", createESCompNavProp(edm, odata));
     data.put("ESCollAllPrim", createESCollAllPrim(edm, odata));
     data.put("ESMixPrimCollComp", createESMixPrimCollComp(edm, odata));
     data.put("ESAllKey", createESAllKey(edm, odata));
@@ -93,13 +95,31 @@ public class DataCreator {
     data.put("SI", createESTwoPrim(edm, odata));
 
     linkSINav(data);
+    linkESCompNavProp(data);
     linkESTwoPrim(data);
     linkESAllPrim(data);
     linkESKeyNav(data);
     linkESTwoKeyNav(data);
     linkESPeople(data);
   }
-  
+
+  private EntityCollection createESCompNavProp(Edm edm, OData odata) {
+    final EntityCollection entityCollection = new EntityCollection();
+
+    entityCollection.getEntities().add(new Entity()
+        .addProperty(createPrimitive("PropertyInt16", (short) 1))
+        .addProperty(createComplex("PropertyComp",
+                ComplexTypeProvider.nameCTNavProp.getFullQualifiedNameAsString(),
+                createPrimitive("PropertyString", "Num111")
+            ))
+        );
+
+    setEntityType(entityCollection, edm.getEntityType(EntityTypeProvider.nameETCompNavProp));
+    createEntityId(edm, odata, "ESCompNavProp", entityCollection);
+    createOperations("ESCompNavProp", entityCollection, EntityTypeProvider.nameETCompNavProp);
+    return entityCollection;
+  }
+
   private EntityCollection createSINav(Edm edm, OData odata) {
     final EntityCollection entityCollection = new EntityCollection();
 
@@ -1409,7 +1429,7 @@ public class DataCreator {
     final List<Entity> esKeyNavTargets = data.get("ESKeyNav").getEntities();
     final List<Entity> esTwoKeyNavTargets = data.get("ESTwoKeyNav").getEntities();
     final  List<Entity> SINav = data.get("SINav").getEntities();
-    
+
     // NavPropertyETKeyNavOne
     setLink(entityCollection.getEntities().get(0), "NavPropertyETKeyNavOne", esKeyNavTargets.get(0));
     setLink(entityCollection.getEntities().get(1), "NavPropertyETKeyNavOne", esKeyNavTargets.get(0));
@@ -1455,6 +1475,15 @@ public class DataCreator {
      // NavPropertyETTwoKeyNavMany
      setLinks(entityCollection.getEntities().get(0), "NavPropertyETTwoKeyNavMany", esTwoKeyNavTargets.get(0),
          esTwoKeyNavTargets.get(1));
+  }
+
+  private void linkESCompNavProp(final Map<String, EntityCollection> data) {
+    final EntityCollection entityCollection = data.get("ESCompNavProp");
+    final List<Entity> esTwoKeyTwoPrimTargets = data.get("ESTwoKeyTwoPrim").getEntities();
+
+    setLink(entityCollection.getEntities().get(0).getProperty("PropertyComp").asComplex(),
+        "NavPropertyETTwoKeyTwoPrimOne",
+        esTwoKeyTwoPrimTargets.get(0));
   }
 
   protected static Property createPrimitive(final String name, final Object value) {
@@ -1562,21 +1591,21 @@ public class DataCreator {
     return link;
   }
 
-  protected static void setLink(final Entity entity, final String navigationPropertyName, final Entity target) {
-    Link link = entity.getNavigationLink(navigationPropertyName);
+  protected static void setLink(final Linked linked, final String navigationPropertyName, final Entity target) {
+    Link link = linked.getNavigationLink(navigationPropertyName);
     if (link == null) {
       link = new Link();
       link.setRel(Constants.NS_NAVIGATION_LINK_REL + navigationPropertyName);
       link.setType(Constants.ENTITY_NAVIGATION_LINK_TYPE);
       link.setTitle(navigationPropertyName);
       link.setHref(target.getId().toASCIIString());
-      entity.getNavigationLinks().add(link);
+      linked.getNavigationLinks().add(link);
     }
     link.setInlineEntity(target);
   }
 
-  protected static void setLinks(final Entity entity, final String navigationPropertyName, final Entity... targets) {
-    Link link = entity.getNavigationLink(navigationPropertyName);
+  protected static void setLinks(final Linked linked, final String navigationPropertyName, final Entity... targets) {
+    Link link = linked.getNavigationLink(navigationPropertyName);
     if (link == null) {
       link = new Link();
       link.setRel(Constants.NS_NAVIGATION_LINK_REL + navigationPropertyName);
@@ -1585,8 +1614,8 @@ public class DataCreator {
       EntityCollection target = new EntityCollection();
       target.getEntities().addAll(Arrays.asList(targets));
       link.setInlineEntitySet(target);
-      link.setHref(entity.getId().toASCIIString() + "/" + navigationPropertyName);
-      entity.getNavigationLinks().add(link);
+      link.setHref(linked.getId().toASCIIString() + "/" + navigationPropertyName);
+      linked.getNavigationLinks().add(link);
     } else {
       link.getInlineEntitySet().getEntities().addAll(Arrays.asList(targets));
     }

@@ -27,6 +27,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -43,12 +44,15 @@ import org.apache.olingo.commons.api.data.Operation;
 import org.apache.olingo.commons.api.data.Property;
 import org.apache.olingo.commons.api.data.ValueType;
 import org.apache.olingo.commons.api.edm.EdmComplexType;
+import org.apache.olingo.commons.api.edm.EdmElement;
 import org.apache.olingo.commons.api.edm.EdmEntityContainer;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
+import org.apache.olingo.commons.api.edm.EdmNavigationProperty;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveType;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.EdmProperty;
+import org.apache.olingo.commons.api.edm.EdmStructuredType;
 import org.apache.olingo.commons.api.edm.geo.Point;
 import org.apache.olingo.commons.api.edm.geo.Polygon;
 import org.apache.olingo.commons.api.edm.geo.SRID;
@@ -75,6 +79,10 @@ import org.apache.olingo.server.api.serializer.ReferenceSerializerOptions;
 import org.apache.olingo.server.api.serializer.SerializerException;
 import org.apache.olingo.server.api.serializer.SerializerResult;
 import org.apache.olingo.server.api.uri.UriHelper;
+import org.apache.olingo.server.api.uri.UriInfoResource;
+import org.apache.olingo.server.api.uri.UriResource;
+import org.apache.olingo.server.api.uri.UriResourceNavigation;
+import org.apache.olingo.server.api.uri.UriResourceProperty;
 import org.apache.olingo.server.api.uri.queryoption.CountOption;
 import org.apache.olingo.server.api.uri.queryoption.ExpandItem;
 import org.apache.olingo.server.api.uri.queryoption.ExpandOption;
@@ -1251,6 +1259,53 @@ public class ODataJsonSerializerTest {
         + "\"PropertyGuid\":\"01234567-89ab-cdef-0123-456789abcdef\","
         + "\"PropertyTimeOfDay\":\"03:26:05\"}}",
         resultString);
+  }
+
+  @Test
+  public void expandComplex() throws Exception {
+    final EdmEntitySet edmEntitySet = entityContainer.getEntitySet("ESCompNavProp");
+    final Entity entity = data.readAll(edmEntitySet).getEntities().get(0);
+
+    List<String> names = Arrays.asList("PropertyComp", "NavPropertyETTwoKeyTwoPrimOne");
+
+    EdmStructuredType type = edmEntitySet.getEntityType();
+    List<UriResource> elements = new ArrayList<UriResource>();
+
+    final EdmElement edmElement = type.getProperty(names.get(0));
+    final EdmProperty edmProperty = ((EdmProperty)edmElement);
+
+    UriResourceProperty element1 = Mockito.mock(UriResourceProperty.class);
+    Mockito.when(element1.getSegmentValue()).thenReturn(names.get(0));
+    Mockito.when(element1.getProperty()).thenReturn(edmProperty);
+    elements.add(element1);
+
+    UriResourceNavigation element2 = Mockito.mock(UriResourceNavigation.class);
+    final EdmNavigationProperty property = Mockito.mock(EdmNavigationProperty.class);
+    Mockito.when(property.getName()).thenReturn(names.get(1));
+    Mockito.when(element2.getProperty()).thenReturn(property);
+    Mockito.when(element2.getSegmentValue()).thenReturn(names.get(1));
+    elements.add(element2);
+
+    UriInfoResource resource = Mockito.mock(UriInfoResource.class);
+    Mockito.when(resource.getUriResourceParts()).thenReturn(elements);
+    ExpandItem expandItem = Mockito.mock(ExpandItem.class);
+    Mockito.when(expandItem.getResourcePath()).thenReturn(resource);
+
+    final ExpandOption expand = ExpandSelectMock.mockExpandOption(Collections.singletonList(expandItem));
+    InputStream result = serializer.entity(metadata, edmEntitySet.getEntityType(), entity,
+            EntitySerializerOptions.with()
+                    .contextURL(ContextURL.with().entitySet(edmEntitySet).suffix(Suffix.ENTITY).build())
+                    .expand(expand)
+                    .build()).getContent();
+    final String resultString = IOUtils.toString(result);
+    Assert.assertEquals("{"
+                    + "\"@odata.context\":\"$metadata#ESCompNavProp/$entity\","
+                    + "\"@odata.metadataEtag\":\"W/\\\"metadataETag\\\"\","
+                    + "\"PropertyInt16\":1,\"PropertyComp\":{"
+                    + "\"PropertyString\":\"Num111\","
+                    + "\"NavPropertyETTwoKeyTwoPrimOne\":"
+                    + "{\"PropertyInt16\":32767,\"PropertyString\":\"Test String1\"}}}",
+            resultString);
   }
 
   @Test

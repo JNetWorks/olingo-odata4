@@ -87,6 +87,7 @@ public class ContainerProvider {
     entitySets.add(prov.getEntitySet(ContainerProvider.nameContainer, "ESAllKey"));
     entitySets.add(prov.getEntitySet(ContainerProvider.nameContainer, "ESCompAllPrim"));
     entitySets.add(prov.getEntitySet(ContainerProvider.nameContainer, "ESCompCollAllPrim"));
+    entitySets.add(prov.getEntitySet(ContainerProvider.nameContainer, "ESCompNavProp"));
     entitySets.add(prov.getEntitySet(ContainerProvider.nameContainer, "ESCompComp"));
     entitySets.add(prov.getEntitySet(ContainerProvider.nameContainer, "ESCompCollComp"));
     entitySets.add(prov.getEntitySet(ContainerProvider.nameContainer, "ESMedia"));
@@ -304,6 +305,13 @@ public class ContainerProvider {
                         .setValue("Contains entities with a complex type containing all collection primitive types")),
                 new CsdlAnnotation().setTerm(TermProvider.TERM_DATA.getFullQualifiedNameAsString()).setExpression(
                     new CsdlConstantExpression(CsdlConstantExpression.ConstantExpressionType.Bool, "true"))));
+      } else if (name.equals("ESCompNavProp")) {
+        return new CsdlEntitySet()
+            .setName("ESCompNavProp")
+            .setType(EntityTypeProvider.nameETCompNavProp)
+            .setNavigationPropertyBindings(
+                Arrays.asList(new CsdlNavigationPropertyBinding().setPath("ComplexProp/NavPropertyETTwoKeyTwoPrimOne")
+            .setTarget("NavPropertyETTwoKeyTwoPrimOne")));
 
       } else if (name.equals("ESCompComp")) {
         return new CsdlEntitySet()

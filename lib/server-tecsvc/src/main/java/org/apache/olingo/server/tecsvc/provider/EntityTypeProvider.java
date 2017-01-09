@@ -45,6 +45,8 @@ public class EntityTypeProvider {
       "ETCollAllPrim");
   public static final FullQualifiedName nameETCompAllPrim = new FullQualifiedName(SchemaProvider.NAMESPACE,
       "ETCompAllPrim");
+  public static final FullQualifiedName nameETCompNavProp = new FullQualifiedName(SchemaProvider.NAMESPACE,
+      "ETCompNavProp");
   public static final FullQualifiedName nameETCompCollAllPrim = new FullQualifiedName(SchemaProvider.NAMESPACE,
       "ETCompCollAllPrim");
   public static final FullQualifiedName nameETCompCollComp = new FullQualifiedName(SchemaProvider.NAMESPACE,
@@ -240,6 +242,14 @@ public class EntityTypeProvider {
           .setKey(Arrays.asList(new CsdlPropertyRef().setName("PropertyInt16")))
           .setProperties(
               Arrays.asList(PropertyProvider.propertyInt16_NotNullable, PropertyProvider.propertyComp_CTAllPrim));
+    } else if (entityTypeName.equals(nameETCompNavProp)) {
+      return new CsdlEntityType()
+          .setName("ETCompNavProp")
+          .setKey(Arrays.asList(new CsdlPropertyRef().setName("PropertyInt16")))
+          .setProperties(
+              Arrays.asList(
+                  PropertyProvider.propertyInt16_NotNullable,
+                  PropertyProvider.propertyComp_CTNavProp));
 
     } else if (entityTypeName.equals(nameETCompCollAllPrim)) {
       return new CsdlEntityType()
