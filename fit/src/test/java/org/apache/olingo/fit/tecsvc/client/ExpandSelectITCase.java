@@ -26,14 +26,17 @@ import static org.junit.Assert.assertNull;
 import java.util.Calendar;
 import java.util.List;
 
+import org.apache.olingo.client.api.EdmEnabledODataClient;
 import org.apache.olingo.client.api.communication.request.retrieve.ODataEntityRequest;
 import org.apache.olingo.client.api.communication.response.ODataRetrieveResponse;
+import org.apache.olingo.client.api.domain.ClientComplexValue;
 import org.apache.olingo.client.api.domain.ClientEntity;
 import org.apache.olingo.client.api.domain.ClientInlineEntity;
 import org.apache.olingo.client.api.domain.ClientInlineEntitySet;
 import org.apache.olingo.client.api.domain.ClientLink;
 import org.apache.olingo.client.api.domain.ClientLinkType;
 import org.apache.olingo.client.api.domain.ClientProperty;
+import org.apache.olingo.commons.api.format.ContentType;
 import org.apache.olingo.commons.api.http.HttpStatusCode;
 import org.apache.olingo.fit.tecsvc.TecSvcConst;
 import org.junit.Test;
@@ -121,6 +124,51 @@ public class ExpandSelectITCase extends AbstractParamTecSvcITCase {
     time.set(1970, Calendar.JANUARY, 1, 23, 49, 14);
     assertEquals(new java.sql.Timestamp(time.getTimeInMillis()),
         inlineEntity.getProperty("PropertyTimeOfDay").getPrimitiveValue().toValue());
+  }
+
+  @Test
+  public void readExpandComplex() {
+    EdmEnabledODataClient edmEnabledClient = getEdmEnabledClient();
+    // TODO Implement XML serializing
+    edmEnabledClient.getConfiguration().setDefaultPubFormat(ContentType.APPLICATION_JSON);
+
+    ODataEntityRequest<ClientEntity> request = edmEnabledClient.getRetrieveRequestFactory()
+        .getEntityRequest(getClient().newURIBuilder(TecSvcConst.BASE_URI)
+            .appendEntitySetSegment("ESCompNavProp").appendKeySegment(1)
+            .expand("PropertyComp/NavPropertyETTwoKeyTwoPrimOne")
+            .build());
+    assertNotNull(request);
+    setCookieHeader(request);
+
+    final ODataRetrieveResponse<ClientEntity> response = request.execute();
+    saveCookieHeader(response);
+    assertEquals(HttpStatusCode.OK.getStatusCode(), response.getStatusCode());
+
+    final ClientEntity entity = response.getBody();
+    assertNotNull(entity);
+
+    ClientProperty propertyParent = entity.getProperty("PropertyInt16");
+    assertNotNull(propertyParent);
+    assertShortOrInt(1, propertyParent.getPrimitiveValue().toValue());
+
+    ClientProperty compProperty = entity.getProperty("PropertyComp");
+    assertNotNull(compProperty);
+
+    ClientComplexValue innerComplexValue = compProperty.getComplexValue().asComplex();
+
+    ClientProperty compValueProp = innerComplexValue.get("PropertyString");
+    assertNotNull(compValueProp);
+    assertNotNull(compValueProp.getPrimitiveValue());
+    assertEquals("Num111", compValueProp.getPrimitiveValue().toValue());
+
+    ClientProperty expanded = innerComplexValue.get("NavPropertyETTwoKeyTwoPrimOne");
+    assertNotNull(expanded);
+    assertNotNull(expanded.getComplexValue());
+    assertNotNull(expanded.getComplexValue().get("PropertyInt16"));
+
+    assertShortOrInt(
+        Short.MAX_VALUE,
+        expanded.getComplexValue().get("PropertyInt16").getPrimitiveValue().toValue());
   }
 
   @Test

@@ -1299,13 +1299,19 @@ public class ODataJsonSerializerTest {
                     .build()).getContent();
     final String resultString = IOUtils.toString(result);
     Assert.assertEquals("{"
-                    + "\"@odata.context\":\"$metadata#ESCompNavProp/$entity\","
-                    + "\"@odata.metadataEtag\":\"W/\\\"metadataETag\\\"\","
-                    + "\"PropertyInt16\":1,\"PropertyComp\":{"
-                    + "\"PropertyString\":\"Num111\","
-                    + "\"NavPropertyETTwoKeyTwoPrimOne\":"
-                    + "{\"PropertyInt16\":32767,\"PropertyString\":\"Test String1\"}}}",
-            resultString);
+        + "\"@odata.context\":\"$metadata#ESCompNavProp/$entity\","
+        + "\"@odata.metadataEtag\":\"W/\\\"metadataETag\\\"\","
+        + "\"PropertyInt16\":1,"
+        + "\"PropertyComp\":{"
+        + "\"PropertyString\":\"Num111\","
+        + "\"NavPropertyETTwoKeyTwoPrimOne\":"
+              + "{"
+              + "\"PropertyInt16\":32767,"
+              + "\"PropertyString\":\"Test String1\""
+              + "}"
+          + "}"
+        + "}",
+        resultString);
   }
 
   @Test
