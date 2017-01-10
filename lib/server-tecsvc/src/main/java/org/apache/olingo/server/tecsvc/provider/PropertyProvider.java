@@ -694,6 +694,10 @@ public class PropertyProvider {
       .setName("PropertyComp")
       .setType(ComplexTypeProvider.nameCTCompComp);
 
+  public static final CsdlProperty propertyComp_CTNavProp = new CsdlProperty()
+      .setName("PropertyComp")
+      .setType(ComplexTypeProvider.nameCTNavProp);
+
   public static final CsdlProperty propertyComp_CTNavFiveProp = new CsdlProperty()
       .setName("PropertyComp")
       .setType(ComplexTypeProvider.nameCTNavFiveProp);
@@ -836,6 +840,12 @@ public class PropertyProvider {
       .setName("NavPropertyETTwoPrimOne")
       .setType(EntityTypeProvider.nameETTwoPrim)
       .setNullable(false);
+
+  public static final CsdlNavigationProperty navPropertyETTwoKeyTwoPrimOne_ETTwoKeyTwoPrim =
+      new CsdlNavigationProperty()
+          .setName("NavPropertyETTwoKeyTwoPrimOne")
+          .setType(EntityTypeProvider.nameETTwoKeyTwoPrim)
+          .setNullable(false);
 
   public static final CsdlNavigationProperty navPropertyETAllPrimOne_ETAllPrim = new CsdlNavigationProperty()
       .setName("NavPropertyETAllPrimOne")

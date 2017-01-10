@@ -18,7 +18,6 @@
  */
 package org.apache.olingo.commons.api.data;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,31 +25,30 @@ import java.util.List;
  */
 public class ComplexValue extends Linked {
 
-  private final List<Property> value = new ArrayList<Property>();
-
   /**
    * Get list of all values for this ComplexValue.
+   * Returns tha same as getProperties()
    *
    * @return all values for this ComplexValue (can not be null).
    */
   public List<Property> getValue() {
-    return value;
+    return properties;
   }
 
   @Override
   public boolean equals(final Object o) {
-    return super.equals(o) && value.equals(((ComplexValue) o).value);
+    return super.equals(o) && properties.equals(((ComplexValue) o).properties);
   }
 
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + value.hashCode();
+    result = 31 * result + properties.hashCode();
     return result;
   }
 
   @Override
   public String toString() {
-    return value.toString();
+    return properties.toString();
   }
 }

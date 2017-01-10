@@ -36,8 +36,6 @@ public class Entity extends Linked {
   private final List<Link> mediaEditLinks = new ArrayList<Link>();
   private final List<Operation> operations = new ArrayList<Operation>();
 
-  private final List<Property> properties = new ArrayList<Property>();
-
   private URI mediaContentSource;
   private String mediaContentType;
   private String mediaETag;
@@ -140,34 +138,6 @@ public class Entity extends Linked {
   public Entity addProperty(final Property property) {
     properties.add(property);
     return this;
-  }
-
-  /**
-   * Gets properties.
-   *
-   * @return properties.
-   */
-  public List<Property> getProperties() {
-    return properties;
-  }
-
-  /**
-   * Gets property with given name.
-   *
-   * @param name property name
-   * @return property with given name if found, null otherwise
-   */
-  public Property getProperty(final String name) {
-    Property result = null;
-
-    for (Property property : properties) {
-      if (name.equals(property.getName())) {
-        result = property;
-        break;
-      }
-    }
-
-    return result;
   }
 
   /**

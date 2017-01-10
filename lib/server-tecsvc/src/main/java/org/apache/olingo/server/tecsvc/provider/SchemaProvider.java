@@ -70,6 +70,7 @@ public class SchemaProvider {
     entityTypes.add(prov.getEntityType(EntityTypeProvider.nameETAllKey));
     entityTypes.add(prov.getEntityType(EntityTypeProvider.nameETCompAllPrim));
     entityTypes.add(prov.getEntityType(EntityTypeProvider.nameETCompCollAllPrim));
+    entityTypes.add(prov.getEntityType(EntityTypeProvider.nameETCompNavProp));
     entityTypes.add(prov.getEntityType(EntityTypeProvider.nameETCompComp));
     entityTypes.add(prov.getEntityType(EntityTypeProvider.nameETCompCollComp));
     entityTypes.add(prov.getEntityType(EntityTypeProvider.nameETMedia));
@@ -98,6 +99,7 @@ public class SchemaProvider {
     complexTypes.add(prov.getComplexType(ComplexTypeProvider.nameCTMixEnumDef));
     complexTypes.add(prov.getComplexType(ComplexTypeProvider.nameCTBase));
     complexTypes.add(prov.getComplexType(ComplexTypeProvider.nameCTTwoBase));
+    complexTypes.add(prov.getComplexType(ComplexTypeProvider.nameCTNavProp));
     complexTypes.add(prov.getComplexType(ComplexTypeProvider.nameCTCompComp));
     complexTypes.add(prov.getComplexType(ComplexTypeProvider.nameCTCompCollComp));
     complexTypes.add(prov.getComplexType(ComplexTypeProvider.nameCTPrimComp));

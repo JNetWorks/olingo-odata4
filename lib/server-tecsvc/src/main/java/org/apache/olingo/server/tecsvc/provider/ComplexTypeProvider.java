@@ -39,7 +39,7 @@ public class ComplexTypeProvider {
       "CTCompCollComp");
   public static final FullQualifiedName nameCTCompComp = new FullQualifiedName(SchemaProvider.NAMESPACE, "CTCompComp");
   public static final FullQualifiedName nameCTCompNav = new FullQualifiedName(SchemaProvider.NAMESPACE, "CTCompNav");
-
+  public static final FullQualifiedName nameCTNavProp = new FullQualifiedName(SchemaProvider.NAMESPACE, "CTNavProp");
   public static final FullQualifiedName nameCTMixPrimCollComp = new FullQualifiedName(SchemaProvider.NAMESPACE,
       "CTMixPrimCollComp");
   public static final FullQualifiedName nameCTNavFiveProp = new FullQualifiedName(SchemaProvider.NAMESPACE,
@@ -98,6 +98,11 @@ public class ComplexTypeProvider {
           .setName("CTCompNav")
           .setProperties(Arrays.asList(PropertyProvider.propertyString,
               PropertyProvider.propertyCompNav_CTNavFiveProp));
+    } else if (complexTypeName.equals(nameCTNavProp)) {
+      return new CsdlComplexType()
+          .setName("CTNavProp")
+          .setProperties(Arrays.asList(PropertyProvider.propertyString))
+          .setNavigationProperties(Arrays.asList(PropertyProvider.navPropertyETTwoKeyTwoPrimOne_ETTwoKeyTwoPrim));
 
     } else if (complexTypeName.equals(nameCTMixPrimCollComp)) {
       return new CsdlComplexType()

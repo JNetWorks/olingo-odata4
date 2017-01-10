@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
@@ -239,7 +240,10 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
         writeEntitySet(metadata, entityType, entitySet, null, null, null, false, null, json);
       } else {
         writeEntitySet(metadata, entityType, entitySet,
-            options.getExpand(), null, options.getSelect(), options.getWriteOnlyReferences(), null, json);
+                options == null ? null : options.getExpand(),
+                null,
+                options == null ? null : options.getSelect(),
+                options == null ? null : options.getWriteOnlyReferences(), null, json);
       }
       // next link support for streaming results
       writeNextLink(entitySet, json);
@@ -316,7 +320,7 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
    * @return ascii representation of the entity id
    */
   private String getEntityId(Entity entity) throws SerializerException {
-    if(entity.getId() == null) {
+    if (entity.getId() == null) {
       throw new SerializerException("Entity id is null.", SerializerException.MessageKeys.MISSING_ID);
     }
     return entity.getId().toASCIIString();
@@ -336,7 +340,7 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
   }
 
   protected void writeEntity(final ServiceMetadata metadata, final EdmEntityType entityType, final Entity entity,
-      final ContextURL contextURL, final ExpandOption expand, Integer toDepth, 
+      final ContextURL contextURL, final ExpandOption expand, Integer toDepth,
       final SelectOption select, final boolean onlyReference, Set<String> ancestors, final JsonGenerator json)
       throws IOException, SerializerException {
     boolean cycle = false;
@@ -382,7 +386,6 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
         if ((!isODataMetadataNone && !areKeyPredicateNamesSelected(select, resolvedType)) || isODataMetadataFull) {
           json.writeStringField(Constants.JSON_ID, getEntityId(entity));
         }
-        
         if (isODataMetadataFull) {
           if (entity.getSelfLink() != null) {
             json.writeStringField(Constants.JSON_READ_LINK, entity.getSelfLink().getHref());
@@ -391,10 +394,8 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
             json.writeStringField(Constants.JSON_EDIT_LINK, entity.getEditLink().getHref());
           }
         }
-        
-        writeProperties(metadata, resolvedType, entity.getProperties(), select, json);
-        writeNavigationProperties(metadata, resolvedType, entity, expand, toDepth, ancestors, json);
-        writeOperations(entity.getOperations(), json);      
+        writeProperties(metadata, resolvedType, entity, select, expand, toDepth, ancestors, json);
+        writeOperations(entity.getOperations(), json);
       }
       json.writeEndObject();
     } finally {
@@ -441,7 +442,6 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
 
   protected EdmComplexType resolveComplexType(final ServiceMetadata metadata, final EdmComplexType baseType,
       final String derivedTypeName) throws SerializerException {
-      
     String fullQualifiedName = baseType.getFullQualifiedName().getFullQualifiedNameAsString();
     if (derivedTypeName == null ||
       fullQualifiedName.equals(derivedTypeName)) {
@@ -464,42 +464,82 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
             baseType.getFullQualifiedName().getFullQualifiedNameAsString());
   }
 
+  // null means select or expand all
+  // empty list - nothing to select or expand
   protected void writeProperties(final ServiceMetadata metadata, final EdmStructuredType type,
-      final List<Property> properties,
-      final SelectOption select, final JsonGenerator json)
+      final Linked linked, final SelectOption select, final ExpandOption expand,
+      final Integer toDepth, final Set<String> ancestors, final JsonGenerator json)
       throws IOException, SerializerException {
-    final boolean all = ExpandSelectHelper.isAll(select);
-    final Set<String> selected = all ? new HashSet<String>() :
-        ExpandSelectHelper.getSelectedPropertyNames(select.getSelectItems());
+
+    Set<List<String>> selectedPaths = ExpandSelectHelper.isAll(select) ? null :
+        ExpandSelectHelper.getSelectedPaths(select.getSelectItems());
+    Set<List<String>> expandedPaths = !ExpandSelectHelper.hasExpand(expand) ? new HashSet<List<String>>() :
+        (ExpandSelectHelper.isExpandAll(expand) ? null :
+            ExpandSelectHelper.getExpandedPaths(expand.getExpandItems()));
+
+    writeProperties(metadata, type, linked,
+      new LinkedList<String>(),
+      select,
+      selectedPaths,
+      expand,
+      expandedPaths,
+      toDepth,
+      ancestors,
+      json);
+  }
+
+  protected void writeProperties(final ServiceMetadata metadata, final EdmStructuredType type,
+      final Linked linked, final LinkedList<String> path,
+      final SelectOption select, final Set<List<String>> selectedPaths,
+      final ExpandOption expand, final Set<List<String>> expandedPaths,
+      final Integer toDepth, final Set<String> ancestors,
+      final JsonGenerator json) throws IOException, SerializerException {
+
+    final boolean selectAll = selectedPaths == null;
+    final Set<String> selected = selectAll ? new HashSet<String>() : ExpandSelectHelper.getSelected(selectedPaths);
+
     for (final String propertyName : type.getPropertyNames()) {
-      if (all || selected.contains(propertyName)) {
+      if (selectAll || selected.contains(propertyName)) {
         final EdmProperty edmProperty = type.getStructuralProperty(propertyName);
-        final Property property = findProperty(propertyName, properties);
-        final Set<List<String>> selectedPaths = all || edmProperty.isPrimitive() ? null :
-            ExpandSelectHelper.getSelectedPaths(select.getSelectItems(), propertyName);
-        writeProperty(metadata, edmProperty, property, selectedPaths, json);
+        final Property property = linked.getProperty(propertyName);
+        final Set<List<String>> nextSelectedPaths = selectAll || edmProperty.isPrimitive() ? null :
+            ExpandSelectHelper.getReducedPaths(selectedPaths, propertyName);
+        final Set<List<String>> nextExpandedPaths = edmProperty.isPrimitive() ? null :
+            ExpandSelectHelper.getReducedPaths(expandedPaths, propertyName);
+
+        path.add(propertyName);
+        writeProperty(metadata, edmProperty, property, path, select, nextSelectedPaths, expand,
+          nextExpandedPaths,
+          json);
+        path.pollLast();
       }
     }
+    writeNavigationProperties(metadata, type, linked, path, expand, expandedPaths, toDepth, ancestors, json);
   }
 
   protected void writeNavigationProperties(final ServiceMetadata metadata,
-      final EdmStructuredType type, final Linked linked, final ExpandOption expand, final Integer toDepth,
+      final EdmStructuredType type, final Linked linked,
+      final LinkedList<String> path, final ExpandOption expand,
+      final Set<List<String>> expandedPaths, final Integer toDepth,
       final Set<String> ancestors, final JsonGenerator json) throws SerializerException, IOException {
     if ((toDepth != null && toDepth > 1) || (toDepth == null && ExpandSelectHelper.hasExpand(expand))) {
       final ExpandItem expandAll = ExpandSelectHelper.getExpandAll(expand);
       for (final String propertyName : type.getNavigationPropertyNames()) {
-        final ExpandItem innerOptions = ExpandSelectHelper.getExpandItem(expand.getExpandItems(), propertyName);
+        path.add(propertyName);
+        final ExpandItem innerOptions = expandedPaths == null ?
+            null : ExpandSelectHelper.getExpandItem(expand.getExpandItems(), path);
         if (toDepth != null) {
           final EdmNavigationProperty property = type.getNavigationProperty(propertyName);
           final Link navigationLink = linked.getNavigationLink(property.getName());
           writeExpandedNavigationProperty(metadata, property, navigationLink,
-                expand, toDepth-1,
-                innerOptions == null ? null : innerOptions.getSelectOption(),
-                innerOptions == null ? null : innerOptions.getCountOption(),
-                innerOptions == null ? false : innerOptions.hasCountPath(),
-                innerOptions == null ? false : innerOptions.isRef(),
-                ancestors,
-                json);
+            expand, toDepth-1,
+            innerOptions == null ? null : innerOptions.getSelectOption(),
+            innerOptions == null ? null : innerOptions.getCountOption(),
+            innerOptions == null ? false : innerOptions.hasCountPath(),
+            innerOptions == null ? false : innerOptions.isRef(),
+            ancestors,
+            json);
+          path.pollLast();
           continue;
         }
         Integer levels = null;
@@ -532,26 +572,27 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
               levels = levelsOption.getValue();
             }
           }
-                             
+
           writeExpandedNavigationProperty(metadata, property, navigationLink,
-            childExpand, levels,
-            innerOptions == null ? null : innerOptions.getSelectOption(),
-            innerOptions == null ? null : innerOptions.getCountOption(),
-            innerOptions == null ? false : innerOptions.hasCountPath(),
-            innerOptions == null ? false : innerOptions.isRef(),
-            ancestors,
-            json);
+              childExpand, levels,
+              innerOptions == null ? null : innerOptions.getSelectOption(),
+              innerOptions == null ? null : innerOptions.getCountOption(),
+              innerOptions == null ? false : innerOptions.hasCountPath(),
+              innerOptions == null ? false : innerOptions.isRef(),
+              ancestors,
+              json);
         }
+        path.pollLast();
       }
     } else if (isODataMetadataFull) {
       for (final String propertyName : type.getNavigationPropertyNames()) {
         final Link navigationLink = linked.getNavigationLink(propertyName);
         if (navigationLink != null) {
-          json.writeStringField(propertyName + Constants.JSON_NAVIGATION_LINK, navigationLink.getHref());  
+          json.writeStringField(propertyName + Constants.JSON_NAVIGATION_LINK, navigationLink.getHref());
         }
         final Link associationLink = linked.getAssociationLink(propertyName);
         if (associationLink != null) {
-          json.writeStringField(propertyName + Constants.JSON_ASSOCIATION_LINK, associationLink.getHref());  
+          json.writeStringField(propertyName + Constants.JSON_ASSOCIATION_LINK, associationLink.getHref());
         }
       }
     }
@@ -598,16 +639,17 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
       }
     }
   }
-  
+
   private boolean isStreamProperty(EdmProperty edmProperty) {
     final EdmType type = edmProperty.getType();
-    return (edmProperty.isPrimitive() && type == EdmPrimitiveTypeFactory.getInstance(EdmPrimitiveTypeKind.Stream));    
+    return (edmProperty.isPrimitive() && type == EdmPrimitiveTypeFactory.getInstance(EdmPrimitiveTypeKind.Stream));
   }
 
   protected void writeProperty(final ServiceMetadata metadata,
-      final EdmProperty edmProperty, final Property property,
-      final Set<List<String>> selectedPaths, final JsonGenerator json)
-      throws IOException, SerializerException {
+      final EdmProperty edmProperty, final Property property, final LinkedList<String> path,
+      final SelectOption select, final Set<List<String>> selectedPaths,
+      final ExpandOption expand, final Set<List<String>> expandedPaths,
+      final JsonGenerator json) throws IOException, SerializerException {
     boolean isStreamProperty = isStreamProperty(edmProperty);
     writePropertyType(edmProperty, json);
     if (!isStreamProperty) {
@@ -628,10 +670,11 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
         }
       }
     } else {
-      writePropertyValue(metadata, edmProperty, property, selectedPaths, json);
+      writePropertyValue(metadata, edmProperty, property, path,
+          select, selectedPaths, expand, expandedPaths, json);
     }
   }
-  
+
   private void writePropertyType(final EdmProperty edmProperty, JsonGenerator json)
       throws SerializerException, IOException {
     if (!isODataMetadataFull) {
@@ -641,7 +684,7 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
     final EdmType type = edmProperty.getType();
     if (type.getKind() == EdmTypeKind.ENUM || type.getKind() == EdmTypeKind.DEFINITION) {
       if (edmProperty.isCollection()) {
-        json.writeStringField(typeName, 
+        json.writeStringField(typeName,
             "#Collection(" + type.getFullQualifiedName().getFullQualifiedNameAsString() + ")");
       } else {
         json.writeStringField(typeName, "#" + type.getFullQualifiedName().getFullQualifiedNameAsString());
@@ -654,24 +697,26 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
         if (type != EdmPrimitiveTypeFactory.getInstance(EdmPrimitiveTypeKind.Boolean) &&
             type != EdmPrimitiveTypeFactory.getInstance(EdmPrimitiveTypeKind.Double) &&
             type != EdmPrimitiveTypeFactory.getInstance(EdmPrimitiveTypeKind.String)) {
-          json.writeStringField(typeName, "#" + type.getFullQualifiedName().getName());                  
+          json.writeStringField(typeName, "#" + type.getFullQualifiedName().getName());
         }
       }
     } else if (type.getKind() == EdmTypeKind.COMPLEX) {
       // non-collection case written in writeComplex method directly.
       if (edmProperty.isCollection()) {
-        json.writeStringField(typeName, 
+        json.writeStringField(typeName,
             "#Collection(" + type.getFullQualifiedName().getFullQualifiedNameAsString() + ")");
       }
     } else {
       throw new SerializerException("Property type not yet supported!",
           SerializerException.MessageKeys.UNSUPPORTED_PROPERTY_TYPE, edmProperty.getName());
-    }    
+    }
   }
 
   private void writePropertyValue(final ServiceMetadata metadata, final EdmProperty edmProperty,
-      final Property property, final Set<List<String>> selectedPaths, final JsonGenerator json)
-      throws IOException, SerializerException {
+      final Property property, final LinkedList<String> path,
+      final SelectOption select, final Set<List<String>> selectedPaths,
+      final ExpandOption expand, final Set<List<String>> expandedPaths,
+      final JsonGenerator json) throws IOException, SerializerException {
     final EdmType type = edmProperty.getType();
     try {
       if (edmProperty.isPrimitive()
@@ -687,9 +732,11 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
         }
       } else if (property.isComplex()) {
         if (edmProperty.isCollection()) {
-          writeComplexCollection(metadata, (EdmComplexType) type, property, selectedPaths, json);
+          writeComplexCollection(metadata, (EdmComplexType) type, property,
+              path, select, selectedPaths, expand, expandedPaths, json);
         } else {
-         writeComplex(metadata, (EdmComplexType) type, property, selectedPaths, json);
+          writeComplex(metadata, (EdmComplexType) type, property,
+              path, select, selectedPaths, expand, expandedPaths, json);
         }
       } else {
         throw new SerializerException("Property type not yet supported!",
@@ -703,17 +750,19 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
   }
 
   private void writeComplex(final ServiceMetadata metadata, final EdmComplexType type,
-      final Property property, final Set<List<String>> selectedPaths, final JsonGenerator json) 
-          throws IOException, SerializerException{
-        json.writeStartObject();        
-        String derivedName = property.getType();
-        final EdmComplexType resolvedType = resolveComplexType(metadata, type, derivedName);
-        if (!isODataMetadataNone && !resolvedType.equals(type) || isODataMetadataFull) {
-           json.writeStringField(Constants.JSON_TYPE, "#" + property.getType());
-        }          
-        writeComplexValue(metadata, resolvedType, property.asComplex().getValue(), selectedPaths,
-             json);
-        json.writeEndObject();
+      final Property property, final LinkedList<String> path,
+      final SelectOption select, final Set<List<String>> selectedPaths,
+      final ExpandOption expand, final Set<List<String>> expandedPaths,
+      final JsonGenerator json) throws IOException, SerializerException {
+    json.writeStartObject();
+    String derivedName = property.getType();
+    final EdmComplexType resolvedType = resolveComplexType(metadata, type, derivedName);
+    if (!isODataMetadataNone && !resolvedType.equals(type) || isODataMetadataFull) {
+      json.writeStringField(Constants.JSON_TYPE, "#" + property.getType());
+    }
+    writeProperties(metadata, resolvedType, property.asComplex(), path, select, selectedPaths,
+            expand, expandedPaths, null, null, json);
+    json.writeEndObject();
   }
 
   private void writePrimitiveCollection(final EdmPrimitiveType type, final Property property,
@@ -744,24 +793,26 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
   }
 
   private void writeComplexCollection(final ServiceMetadata metadata, final EdmComplexType type,
-      final Property property,
-      final Set<List<String>> selectedPaths, final JsonGenerator json)
-      throws IOException, SerializerException {
+      final Property property, final LinkedList<String> path,
+      final SelectOption select, final Set<List<String>> selectedPaths,
+      final ExpandOption expand, final Set<List<String>> expandedPaths,
+      final JsonGenerator json) throws IOException, SerializerException {
     json.writeStartArray();
     for (Object value : property.asCollection()) {
       switch (property.getValueType()) {
-      case COLLECTION_COMPLEX:
-        json.writeStartObject();
-        if (isODataMetadataFull) {
-             json.writeStringField(Constants.JSON_TYPE, "#" + 
-                     type.getFullQualifiedName().getFullQualifiedNameAsString());
-        }
-        writeComplexValue(metadata, type, ((ComplexValue) value).getValue(), selectedPaths, json);
-        json.writeEndObject();
-        break;
-      default:
-        throw new SerializerException("Property type not yet supported!",
-            SerializerException.MessageKeys.UNSUPPORTED_PROPERTY_TYPE, property.getName());
+        case COLLECTION_COMPLEX:
+          json.writeStartObject();
+          if (isODataMetadataFull) {
+            json.writeStringField(Constants.JSON_TYPE, "#" +
+                type.getFullQualifiedName().getFullQualifiedNameAsString());
+          }
+          writeProperties(metadata, type, ((ComplexValue) value), path, select, selectedPaths, expand,
+              expandedPaths, null, null, json);
+          json.writeEndObject();
+          break;
+        default:
+          throw new SerializerException("Property type not yet supported!",
+              SerializerException.MessageKeys.UNSUPPORTED_PROPERTY_TYPE, property.getName());
       }
     }
     json.writeEndArray();
@@ -922,21 +973,6 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
     }
   }
 
-  protected void writeComplexValue(final ServiceMetadata metadata,
-      final EdmComplexType type, final List<Property> properties,
-      final Set<List<String>> selectedPaths, final JsonGenerator json)
-      throws IOException, SerializerException {
-
-    for (final String propertyName : type.getPropertyNames()) {
-      final Property property = findProperty(propertyName, properties);
-      if (selectedPaths == null || ExpandSelectHelper.isSelected(selectedPaths, propertyName)) {
-        writeProperty(metadata, (EdmProperty) type.getProperty(propertyName), property,
-            selectedPaths == null ? null : ExpandSelectHelper.getReducedSelectedPaths(selectedPaths, propertyName),
-            json);
-      }
-    }
-  }
-
   private Property findProperty(final String propertyName, final List<Property> properties) {
     for (final Property property : properties) {
       if (propertyName.equals(property.getName())) {
@@ -1002,19 +1038,18 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
       JsonGenerator json = new JsonFactory().createGenerator(outputStream);
       json.writeStartObject();
       writeContextURL(contextURL, json);
-      writeMetadataETag(metadata, json);      
+      writeMetadataETag(metadata, json);
       final EdmComplexType resolvedType = resolveComplexType(metadata, type, property.getType());
       if (!isODataMetadataNone && !resolvedType.equals(type) || isODataMetadataFull) {
         json.writeStringField(Constants.JSON_TYPE, "#" + property.getType());
       }
-      writeOperations(property.getOperations(), json);      
-      final List<Property> values =
-          property.isNull() ? Collections.<Property> emptyList() : property.asComplex().getValue();
-      writeProperties(metadata, type, values, options == null ? null : options.getSelect(), json);
-      if (!property.isNull() && property.isComplex()) {
-        writeNavigationProperties(metadata, type, property.asComplex(),
-            options == null ? null : options.getExpand(), null, null, json);
-      }
+      writeOperations(property.getOperations(), json);
+      writeProperties(metadata, type, property.asComplex(),
+        options == null ? null : options.getSelect(),
+        options == null ? null : options.getExpand(),
+        null,
+        null,
+        json);
       json.writeEndObject();
 
       json.close();
@@ -1081,12 +1116,16 @@ public class ODataJsonSerializer extends AbstractODataSerializer {
       writeContextURL(contextURL, json);
       writeMetadataETag(metadata, json);
       if (isODataMetadataFull) {
-        json.writeStringField(Constants.JSON_TYPE, 
-            "#Collection(" + type.getFullQualifiedName().getFullQualifiedNameAsString() + ")");                
+        json.writeStringField(Constants.JSON_TYPE,
+            "#Collection(" + type.getFullQualifiedName().getFullQualifiedNameAsString() + ")");
       }
       writeOperations(property.getOperations(), json);
       json.writeFieldName(Constants.VALUE);
-      writeComplexCollection(metadata, type, property, null, json);
+      writeComplexCollection(metadata, type, property, new LinkedList<String>(),
+          options == null ? null : options.getSelect(),
+          null,
+          options == null ? null : options.getExpand(),
+          null, json);
       json.writeEndObject();
 
       json.close();

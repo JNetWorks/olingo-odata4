@@ -970,7 +970,7 @@ public class ODataXmlSerializer extends AbstractODataSerializer {
       final Property property = findProperty(propertyName, properties);
       if (selectedPaths == null || ExpandSelectHelper.isSelected(selectedPaths, propertyName)) {
         writeProperty(metadata, (EdmProperty) type.getProperty(propertyName), property,
-            selectedPaths == null ? null : ExpandSelectHelper.getReducedSelectedPaths(selectedPaths, propertyName),
+            selectedPaths == null ? null : ExpandSelectHelper.getReducedPaths(selectedPaths, propertyName),
             xml10InvalidCharReplacement, writer);
       }
     }

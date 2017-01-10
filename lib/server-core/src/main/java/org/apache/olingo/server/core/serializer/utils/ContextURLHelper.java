@@ -168,7 +168,7 @@ public final class ContextURLHelper {
         if (ExpandSelectHelper.isSelected(selectedPaths, complexPropertyName)) {
           List<List<String>> complexSelectedPaths = getComplexSelectedPaths(
               (EdmProperty) type.getProperty(complexPropertyName),
-              ExpandSelectHelper.getReducedSelectedPaths(selectedPaths, complexPropertyName));
+              ExpandSelectHelper.getReducedPaths(selectedPaths, complexPropertyName));
           for (final List<String> path : complexSelectedPaths) {
             path.add(0, edmProperty.getName());
             result.add(path);
