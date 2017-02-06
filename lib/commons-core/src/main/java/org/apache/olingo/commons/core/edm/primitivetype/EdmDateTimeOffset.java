@@ -22,6 +22,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,14 +62,23 @@ public final class EdmDateTimeOffset extends SingletonPrimitiveType {
 
     final String timeZoneOffset = matcher.group(9) == null || matcher.group(10) == null
         || matcher.group(10).matches("[-+]0+:0+") ? "" : matcher.group(10);
-    final Calendar dateTimeValue = Calendar.getInstance(TimeZone.getTimeZone("GMT" + timeZoneOffset));
+    final GregorianCalendar dateTimeValue = (GregorianCalendar)
+            GregorianCalendar.getInstance(TimeZone.getTimeZone("GMT" + timeZoneOffset));
+    dateTimeValue.setGregorianChange(new Date(Long.MIN_VALUE));
     if (dateTimeValue.get(Calendar.ZONE_OFFSET) == 0 && !timeZoneOffset.isEmpty()) {
       throw new EdmPrimitiveTypeException("The literal '" + value + "' has illegal content.");
     }
     dateTimeValue.clear();
 
+    short year = Short.parseShort(matcher.group(1));
+    if (year <= 0) {
+      dateTimeValue.set(Calendar.ERA, GregorianCalendar.BC);
+      /* Calendar represents BC years starting with -1 */
+      year = (short)(Math.abs(year) + 1);
+    }
+
     dateTimeValue.set(
-        Short.parseShort(matcher.group(1)),
+        Math.abs(year),
         Byte.parseByte(matcher.group(2)) - 1, // month is zero-based
         Byte.parseByte(matcher.group(3)),
         Byte.parseByte(matcher.group(4)),
@@ -174,8 +184,17 @@ public final class EdmDateTimeOffset extends SingletonPrimitiveType {
 
     StringBuilder result = new StringBuilder();
     final int year = dateTimeValue.get(Calendar.YEAR);
-    appendTwoDigits(result, year / 100);
-    appendTwoDigits(result, year % 100);
+    if (dateTimeValue.get(Calendar.ERA) == GregorianCalendar.BC) {
+      if (year > 0) { // 1 BC -> 0, 2 BC -> -1
+        result.append("-");
+      }
+      result.append(year - 1);
+    } else if (year > 10000) {
+      result.append(year);
+    } else {
+      appendTwoDigits(result, year / 100);
+      appendTwoDigits(result, year % 100);
+    }
     result.append('-');
     appendTwoDigits(result, dateTimeValue.get(Calendar.MONTH) + 1); // month is zero-based
     result.append('-');
@@ -215,15 +234,17 @@ public final class EdmDateTimeOffset extends SingletonPrimitiveType {
    * @throws EdmPrimitiveTypeException if the type of the value is not supported
    */
   protected static <T> Calendar createDateTime(final T value, final boolean isLocal) throws EdmPrimitiveTypeException {
-    Calendar dateTimeValue;
+    GregorianCalendar dateTimeValue = new GregorianCalendar();
+    TimeZone timeZone = isLocal ? TimeZone.getDefault() : TimeZone.getTimeZone("GMT");
+    dateTimeValue.setTimeZone(timeZone);
+    dateTimeValue.setGregorianChange(new Date(Long.MIN_VALUE));
     if (value instanceof Date) {
-      dateTimeValue = Calendar.getInstance(isLocal ? TimeZone.getDefault() : TimeZone.getTimeZone("GMT"));
-      dateTimeValue.setTime((Date) value);
-    } else if (value instanceof Calendar) {
-      dateTimeValue = (Calendar) ((Calendar) value).clone();
+      dateTimeValue.setTime((Date)value);
+    } else if (value instanceof GregorianCalendar) {
+      dateTimeValue = (GregorianCalendar)((GregorianCalendar) value).clone();
+      dateTimeValue.setGregorianChange(new Date(Long.MIN_VALUE));
     } else if (value instanceof Long) {
-      dateTimeValue = Calendar.getInstance(isLocal ? TimeZone.getDefault() : TimeZone.getTimeZone("GMT"));
-      dateTimeValue.setTimeInMillis((Long) value);
+      dateTimeValue.setTimeInMillis((Long)value);
     } else {
       throw new EdmPrimitiveTypeException("The value type " + value.getClass() + " is not supported.");
     }

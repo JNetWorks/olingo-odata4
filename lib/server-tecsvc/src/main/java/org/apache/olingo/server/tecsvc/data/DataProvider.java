@@ -22,6 +22,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -50,8 +51,8 @@ import org.apache.olingo.commons.api.edm.EdmPrimitiveType;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeException;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.EdmProperty;
-import org.apache.olingo.commons.api.edm.EdmStructuredType;
 import org.apache.olingo.commons.api.edm.EdmSingleton;
+import org.apache.olingo.commons.api.edm.EdmStructuredType;
 import org.apache.olingo.commons.api.edm.EdmType;
 import org.apache.olingo.commons.api.edm.EdmTypeDefinition;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -145,6 +146,11 @@ public class DataProvider {
               property.isUnicode(),
               Calendar.class.isAssignableFrom(value.getClass()) ? Calendar.class : value.getClass());
           if (!value.equals(keyValue)) {
+            if (value instanceof GregorianCalendar) {
+              if (((Calendar)keyValue).getTimeInMillis() == ((GregorianCalendar)value).getTimeInMillis()) {
+                continue;
+              }
+            }
             found = false;
             break;
           }
@@ -701,7 +707,7 @@ public class DataProvider {
       super(message, statusCode.getStatusCode(), Locale.ROOT, throwable);
     }
   }
-  
+
   public Entity read(EdmSingleton singleton) {
     if (data.containsKey(singleton.getName())) {
     EntityCollection entitySet = data.get(singleton.getName());

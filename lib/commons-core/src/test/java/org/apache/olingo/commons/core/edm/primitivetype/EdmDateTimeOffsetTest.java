@@ -24,6 +24,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 import org.apache.olingo.commons.api.edm.EdmPrimitiveType;
@@ -31,6 +32,8 @@ import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.junit.Test;
 
 public class EdmDateTimeOffsetTest extends PrimitiveTypeBaseTest {
+
+  public static final long NEGATIVE_INFINITY = -377705073600000L;
 
   final EdmPrimitiveType instance = EdmPrimitiveTypeFactory.getInstance(EdmPrimitiveTypeKind.DateTimeOffset);
 
@@ -95,16 +98,28 @@ public class EdmDateTimeOffsetTest extends PrimitiveTypeBaseTest {
   }
 
   @Test
+  public void negativeValueToString() throws Exception {
+    String negativeDate = instance.valueToString(NEGATIVE_INFINITY, null, null, null, null, null);
+    assertEquals("-9999-01-01T12:00:00Z", negativeDate);
+  }
+
+  @Test
+  public void valueOfNegativeString() throws Exception {
+    Calendar cal = instance.valueOfString("-9999-01-01T12:00:00Z", null, null, null, null, null, Calendar.class);
+    assertEquals(NEGATIVE_INFINITY, cal.getTimeInMillis());
+  }
+
+  @Test
   public void valueOfString() throws Exception {
-    Calendar dateTime = Calendar.getInstance();
+    Calendar dateTime = GregorianCalendar.getInstance();
     dateTime.clear();
     dateTime.setTimeZone(TimeZone.getTimeZone("GMT"));
     dateTime.set(2012, 1, 29, 1, 2, 3);
-    assertEquals(dateTime, instance.valueOfString("2012-02-29T01:02:03Z", null, null, null, null, null,
+    assertCalendarEquality(dateTime, instance.valueOfString("2012-02-29T01:02:03Z", null, null, null, null, null,
         Calendar.class));
     assertEquals(Long.valueOf(dateTime.getTimeInMillis()), instance.valueOfString("2012-02-29T01:02:03+00:00", null,
         null, null, null, null, Long.class));
-    assertEquals(dateTime, instance.valueOfString("2012-02-29T01:02:03", null, null, null, null, null,
+    assertCalendarEquality(dateTime, instance.valueOfString("2012-02-29T01:02:03", null, null, null, null, null,
         Calendar.class));
 
     dateTime.clear();
@@ -116,11 +131,11 @@ public class EdmDateTimeOffsetTest extends PrimitiveTypeBaseTest {
     dateTime.clear();
     dateTime.setTimeZone(TimeZone.getTimeZone("GMT+11:00"));
     dateTime.set(2012, 1, 29, 1, 2, 3);
-    assertEquals(dateTime, instance.valueOfString("2012-02-29T01:02:03+11:00", null, null, null, null, null,
+    assertCalendarEquality(dateTime, instance.valueOfString("2012-02-29T01:02:03+11:00", null, null, null, null, null,
         Calendar.class));
 
     dateTime.add(Calendar.MILLISECOND, 7);
-    assertEquals(dateTime, instance.valueOfString("2012-02-29T01:02:03.007+11:00", null, null, 3, null, null,
+    assertCalendarEquality(dateTime, instance.valueOfString("2012-02-29T01:02:03.007+11:00", null, null, 3, null, null,
         Calendar.class));
     assertEquals(530000001, instance.valueOfString("2012-02-29T01:02:03.530000001+11:00", null, null, 9, null, null,
         Timestamp.class).getNanos());
@@ -151,5 +166,11 @@ public class EdmDateTimeOffsetTest extends PrimitiveTypeBaseTest {
     expectUnconvertibleErrorInValueOfString(instance, "2012-02-29T23:32:02.0123456789", Timestamp.class);
 
     expectTypeErrorInValueOfString(instance, "2012-02-29T01:02:03Z");
+  }
+
+  private void assertCalendarEquality(Calendar calendar1, Calendar calendar2) {
+    assertEquals(calendar1.getTime(), calendar2.getTime());
+    assertEquals(calendar1.getTimeInMillis(), calendar2.getTimeInMillis());
+    assertEquals(calendar1.getTimeZone(), calendar2.getTimeZone());
   }
 }
